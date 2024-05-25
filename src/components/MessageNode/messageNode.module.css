@@ -7,6 +7,10 @@
   cursor: pointer;
 }
 
+.messageNode.selected {
+  border: 1px solid blue;
+}
+
 .messageHeader {
   background-color: aqua;
   padding: 0.5rem;

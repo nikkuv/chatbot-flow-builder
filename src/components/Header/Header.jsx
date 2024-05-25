@@ -3,7 +3,7 @@ import styles from "./header.module.css";
 
 const { Header } = Layout;
 
-const AppHeader = () => {
+const AppHeader = ({onSave}) => {
   return (
     <Header className={styles.header}>
       <Flex
@@ -12,7 +12,7 @@ const AppHeader = () => {
         className={styles.headerContent}
       >
         <Typography>Chatbot Flow Builder</Typography>
-        <Button>Save Changes</Button>
+        <Button onClick={onSave}>Save Changes</Button>
       </Flex>
     </Header>
   );

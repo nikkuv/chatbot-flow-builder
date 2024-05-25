@@ -2,10 +2,12 @@ import { useCallback } from 'react';
 import { Flex, Typography } from 'antd';
 import { MessageOutlined } from '@ant-design/icons';
 import styles from './sidebar.module.css';
+import SettingsPanel from '../SettingsPanel/SettingsPanel';
 
-function Sidebar({ selectedNode, }) {
+function Sidebar({ selectedNode, updateNodeLabel }) {
 
   const onDragStart = useCallback((event, nodeType) => {
+    console.log(event.dataTransfer);
     event.dataTransfer.setData('application/reactflow', JSON.stringify({ type: nodeType, label: 'New Node' }));
     event.dataTransfer.effectAllowed = 'move';
   }, []);
@@ -13,8 +15,7 @@ function Sidebar({ selectedNode, }) {
   return (
     <div className={styles.sidebar}>
       {selectedNode ? 
-        // <SettingsPanel selectedNode={selectedNodes[0]} /> :
-        <Typography>Selected Node</Typography> :
+        <SettingsPanel selectedNode={selectedNode} updateNodeLabel={updateNodeLabel} /> :
         <div>
           <div className={styles.draggableNode} onDragStart={(event) => onDragStart(event, 'messageNode')} draggable>
             <Flex gap={4}>

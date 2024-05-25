@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
+import { Input } from 'antd';
 
-function SettingsPanel({ selectedNode }) {
+function SettingsPanel({ selectedNode, updateNodeLabel }) {
   const [label, setLabel] = useState(selectedNode.data.label);
 
   const handleInputChange = (e) => {
     setLabel(e.target.value);
-    // Update the node label in your state or context that manages React Flow nodes
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      updateNodeLabel(selectedNode.id, label);
+      e.target.blur();
+    }
   };
 
   return (
     <div>
-      <input type="text" value={label} onChange={handleInputChange} />
+      <Input value={label} onChange={handleInputChange} onKeyDown={handleKeyDown} />
     </div>
   );
 }
