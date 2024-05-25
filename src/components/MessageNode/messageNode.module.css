@@ -1,0 +1,19 @@
+.messageNode {
+  background-color: #fff;
+  cursor: grab;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.messageHeader {
+  background-color: aqua;
+  padding: 0.5rem;
+  border-radius: 4px 4px 0 0;
+}
+
+.messageBody {
+  padding: 0.5rem;
+  border-radius: 0 0 4px 4px; 
+}

@@ -1,0 +1,11 @@
+.sidebar {
+  padding: 1rem;
+}
+
+.draggableNode {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: grab;
+}

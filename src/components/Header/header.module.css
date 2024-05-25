@@ -1,0 +1,8 @@
+.header {
+    display: flex;
+    background-color: #eee;
+}
+
+.headerContent {
+    width: 100%;
+}
