@@ -1,28 +1,69 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Layout, message } from "antd";
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
-  useNodesState,
-  useEdgesState,
+  applyNodeChanges,
+  applyEdgeChanges,
   addEdge,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import AppHeader from "./components/Header/Header";
-const { Content, Sider } = Layout;
-import "./App.css";
 import Sidebar from "./components/Siderbar/Sidebar";
 import MessageNode from "./components/MessageNode/MessageNode";
+import { useFlowState } from "./Context/context";
+import "./App.css";
+
+const { Content, Sider } = Layout;
 
 function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
 
+  /**
+   * The `nodeTypes` object is used to define custom node types for the flow.
+   * In this case, the only custom node type is the `messageNode` which is rendered
+   * by the `MessageNode` component.
+   */
   const nodeTypes = useMemo(() => ({ messageNode: MessageNode }), []);
+  /**
+   * The FlowState object is a React context that stores the state of the flow builder.
+   * It contains the nodes, edges, and selectedNode properties which are used to manage the states.
+   */
+  const { nodes, setNodes, edges, setEdges, setSelectedNode } = useFlowState();
 
+  /**
+   * Callback function to handle changes to the nodes in the flow.
+   * It applies the node changes to the nodes in the flow state using the
+   * applyNodeChanges function from the react-flow library.
+   *
+   * @param changes The changes to the nodes.
+   */
+  const onNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes]
+  );
+
+  /**
+   * Callback function to handle changes to the edges in the flow.
+   * It applies the edge changes to the edges in the flow state using the
+   * applyEdgeChanges function from the react-flow library.
+   *
+   * @param changes The changes to the edges.
+   */
+  const onEdgesChange = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    [setEdges]
+  );
+
+  /**
+   * Callback function to handle the connection of two nodes in the flow graph.
+   * It checks if there is already an edge from the source node to the target node.
+   * If there is not, it adds a new edge to the flow state using the addEdge function
+   * from the react-flow library.
+   *
+   * @param params The parameters of the edge to be added.
+   */
   const onConnect = useCallback(
     (params) => {
       const existingEdgesFromSource = edges.filter(
@@ -32,7 +73,6 @@ function App() {
       );
 
       if (existingEdgesFromSource.length === 0) {
-        // Only allow the new edge if there is no existing edge from this source handle
         setEdges((eds) => addEdge(params, eds));
       } else {
         message.info("Edge already exists from this source handle");
@@ -41,44 +81,26 @@ function App() {
     [edges, setEdges]
   );
 
-  // const onDrop = useCallback(
-  //   (event) => {
-  //     event.preventDefault();
-  //     const reactFlowBounds = event.currentTarget.getBoundingClientRect();
-
-  //     const nodeData = JSON.parse(
-  //       event.dataTransfer.getData("application/reactflow")
-  //     );
-
-  //     const newNode = {
-  //       id: `node-${nodes.length + 1}`, // Unique ID for the node
-  //       type: nodeData.type,
-  //       position: {
-  //         x: event.clientX - reactFlowBounds.left,
-  //         y: event.clientY - reactFlowBounds.top,
-  //       },
-  //       data: { label: nodeData.label },
-  //     };
-
-  //     setNodes((nds) => nds.concat(newNode));
-  //   },
-  //   [setNodes, nodes.length]
-  // );
-
+  /**
+   * Handles the drop event for the react-flow component.
+   * When a node is dropped onto the flow, it will add a new node to the flow state.
+   * The new node is created from the data that is stored in the dataTransfer object
+   * which is set when a node is dragged from the sidebar.
+   *
+   * @param event The drop event.
+   */
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
       const reactFlowBounds = event.currentTarget.getBoundingClientRect();
   
       try {
-        // Attempt to parse the JSON data transferred during the drop
         const nodeData = JSON.parse(
           event.dataTransfer.getData("application/reactflow")
         );
   
-        // Construct a new node object using the parsed data
         const newNode = {
-          id: `node-${nodes.length + 1}`, // Unique ID for the node
+          id: `node-${nodes.length + 1}`, 
           type: nodeData.type,
           position: {
             x: event.clientX - reactFlowBounds.left,
@@ -87,94 +109,51 @@ function App() {
           data: { label: nodeData.label },
         };
   
-        // Add the new node to the current array of nodes
         setNodes((nds) => nds.concat(newNode));
       } catch (error) {
         message.error('Error adding node: Invalid data format.');
       }
     },
-    [setNodes, nodes.length]  // Dependencies for useCallback
+    [setNodes, nodes.length]  
   );
   
-
+  /**
+   * Handles the dragover event for the react-flow component.
+   * It sets the dropEffect property of the dataTransfer object to "move"
+   * which will indicate to the user that the node can be dropped onto the flow.
+   *
+   * @param event The dragover event.
+   */
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }, []);
 
+  /**
+   * Handles the click event for a node.
+   * It sets the selectedNode state to the clicked node.
+   *
+   * @param event The click event for a node.
+   * @param node The node that was clicked.
+   */
   const onNodeClick = useCallback((event, node) => {
     setSelectedNode(node);
   }, []);
 
+  /**
+   * Handles the click event for the flow pane.
+   * It clears the selectedNode state, which will hide the settings panel.
+   *
+   * @param event The click event for the flow pane.
+   */
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
   }, []);
 
-  function hasCycle(edges, nodeId, visited, recStack) {
-    if (!visited[nodeId]) {
-      visited[nodeId] = true;
-      recStack[nodeId] = true;
-
-      const nodeEdges = edges.filter((e) => e.source === nodeId);
-      for (let edge of nodeEdges) {
-        if (
-          !visited[edge.target] &&
-          hasCycle(edges, edge.target, visited, recStack)
-        ) {
-          return true;
-        } else if (recStack[edge.target]) {
-          return true;
-        }
-      }
-    }
-    recStack[nodeId] = false;
-    return false;
-  }
-
-  function detectCycles(nodes, edges) {
-    let visited = {};
-    let recStack = {};
-    for (let node of nodes) {
-      if (hasCycle(edges, node.id, visited, recStack)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  const handleSave = useCallback(() => {
-    if (nodes.length > 1) {
-      // Check if the flow contains cycles
-      if (detectCycles(nodes, edges)) {
-        message.error("Flow contains cycles.");
-        return;
-      }
-
-      const nodesWithEmptyTargets = nodes.filter(
-        (node) => !edges.some((edge) => edge.target === node.id)
-      );
-
-      if (nodesWithEmptyTargets.length > 1) {
-        message.error("More than one node has empty target handles.");
-        return;
-      }
-    }
-
-    message.success("Changes saved successfully!");
-  }, [nodes, edges]);
-
-  const updateNodeLabel = useCallback((nodeId, newLabel) => {
-    setNodes((nds) =>
-      nds.map((node) => 
-        node.id === nodeId ? { ...node, data: { ...node.data, label: newLabel } } : node
-      )
-    );
-  }, [setNodes]);
-
   return (
     <ReactFlowProvider>
       <Layout>
-        <AppHeader onSave={handleSave} />
+        <AppHeader />
         <Content>
           <Layout>
             <div className="reactfloWrapper">
@@ -196,7 +175,7 @@ function App() {
               </ReactFlow>
             </div>
             <Sider theme="light">
-              <Sidebar selectedNode={selectedNode} updateNodeLabel={updateNodeLabel}/>
+              <Sidebar />
             </Sider>
           </Layout>
         </Content>
